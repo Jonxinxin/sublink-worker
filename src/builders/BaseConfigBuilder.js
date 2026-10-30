@@ -4,7 +4,7 @@ import { createTranslator } from '../i18n/index.js';
 import { generateRules, getOutbounds, PREDEFINED_RULE_SETS } from '../config/index.js';
 
 export class BaseConfigBuilder {
-    constructor(inputString, baseConfig, lang, userAgent, groupByCountry = false, includeAutoSelect = true) {
+    constructor(inputString, baseConfig, lang, userAgent, groupByCountry = false, includeAutoSelect = true, inlineProviders = false) {
         this.inputString = inputString;
         this.config = deepCopy(baseConfig);
         this.customRules = [];
@@ -14,6 +14,7 @@ export class BaseConfigBuilder {
         this.appliedOverrideKeys = new Set();
         this.groupByCountry = groupByCountry;
         this.includeAutoSelect = includeAutoSelect;
+        this.inlineProviders = inlineProviders;
         this.providerUrls = [];  // URLs to use as providers (auto-sync)
         this.providerNodeNames = [];  // node names from provider subscriptions, for country enumeration only
         this.autoProviderDescriptors = undefined;
@@ -100,8 +101,10 @@ export class BaseConfigBuilder {
                                 this.subscriptionUserinfo = subscriptionUserinfo;
                             }
 
-                            // If format is compatible with target client, use as provider
-                            if (this.isCompatibleProviderFormat(format)) {
+                            // Use a provider only when the caller allows deferred loading.
+                            // Inline mode keeps the already fetched nodes in the final config,
+                            // avoiding a second subscription download in desktop clients.
+                            if (this.isCompatibleProviderFormat(format) && !this.inlineProviders) {
                                 this.providerUrls.push(originalUrl);
                                 // Content is already fetched; keep node names so country
                                 // groups can be built over provider members later.
